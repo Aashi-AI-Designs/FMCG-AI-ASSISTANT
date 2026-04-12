@@ -296,11 +296,17 @@ def render_charts(result, intent: str, campaign_id: str):
 
 
 def _find_pct_uplift_col(df: pd.DataFrame):
-    """Find the column that contains percentage uplift values (not absolute units)."""
-    candidates = [c for c in df.columns if "uplift" in c.lower() and "flagged" not in c]
+    """Find the column that contains percentage uplift values (not absolute units).
+    Handles: uplift_pct, regional_uplift_pct, inventory_delta_pct, percentage_uplift etc.
+    """
+    # Check inventory delta first
+    if "inventory_delta_pct" in df.columns:
+        return "inventory_delta_pct"
+    # Then any uplift pct column
+    candidates = [c for c in df.columns if ("uplift" in c.lower() or "delta" in c.lower()) and "flagged" not in c]
     for col in candidates:
         vals = df[col].dropna()
-        if len(vals) > 0 and vals.abs().max() < 1000:  # pct values are small; unit values are large
+        if len(vals) > 0 and vals.abs().max() < 1000:  # pct values < 1000; unit values are much larger
             return col
     return None
 
@@ -334,18 +340,23 @@ def render_kpi_cards(df: pd.DataFrame, intent: str):
     baseline_col = _find_baseline_col(df)
 
     cols = st.columns(4)
+    is_inventory = intent == "inventory_movement"
     if uplift_col:
         avg_uplift = df[uplift_col].mean()
         max_uplift = df[uplift_col].max()
-        cols[0].metric("Avg Uplift %", f"{avg_uplift:.1f}%")
-        cols[1].metric("Peak Uplift %", f"{max_uplift:.1f}%")
+        label0 = "Avg Clearance %" if is_inventory else "Avg Uplift %"
+        label1 = "Peak Clearance %" if is_inventory else "Peak Uplift %"
+        cols[0].metric(label0, f"{avg_uplift:.1f}%")
+        cols[1].metric(label1, f"{max_uplift:.1f}%")
     else:
         cols[0].metric("Avg Uplift %", "N/A")
         cols[1].metric("Peak Uplift %", "N/A")
     if volume_col:
-        cols[2].metric("Total Promo Units", f"{df[volume_col].sum():,.0f}")
+        label2 = "Total Units Cleared (Promo)" if is_inventory else "Total Promo Units"
+        cols[2].metric(label2, f"{df[volume_col].sum():,.0f}")
     if baseline_col:
-        cols[3].metric("Total Baseline Units", f"{df[baseline_col].sum():,.0f}")
+        label3 = "Total Units Cleared (Prior)" if is_inventory else "Total Baseline Units"
+        cols[3].metric(label3, f"{df[baseline_col].sum():,.0f}")
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────

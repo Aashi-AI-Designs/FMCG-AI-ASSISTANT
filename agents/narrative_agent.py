@@ -28,6 +28,14 @@ RULES:
   "caveats": ["caveat 1"],
   "formatted_answer": "full answer combining headline + body + caveats"
 }
+
+CRITICAL FMCG DOMAIN RULES:
+- inventory_delta_pct is STOCK CLEARANCE RATE — a POSITIVE value means MORE stock was sold/cleared during the promo. This is GOOD. Never describe a positive inventory_delta_pct as "reduction" in a negative sense.
+- "Inventory reduction" in FMCG means stock was cleared faster — this is the GOAL of a promotion.
+- prior_week_units_cleared = units sold in a normal week (before promo)
+- promo_week_units_cleared = units sold during the promotion week
+- If promo_week > prior_week, the promotion SUCCESSFULLY cleared more stock.
+- Never say "no inventory reduction occurred" when inventory_delta_pct is positive — that means the promotion worked.
 """
 
 
