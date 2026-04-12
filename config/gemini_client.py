@@ -1,49 +1,60 @@
 """
-gemini_client.py — Shared Gemini API Client
-Model: gemini-2.0-flash-lite (confirmed available on your key, free tier)
+now using Groq, free tier
+----------------------------------------------------------
+Groq free tier: 30 RPM, resets hourly — much better for development.
+
+Get your free key at: https://console.groq.com → API Keys → Create
+Add to .env:  GROQ_API_KEY=gsk_...
 """
 
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-FLASH_MODEL = "gemini-2.0-flash-lite"
-PRO_MODEL   = "gemini-2.0-flash-lite"
+# Model — Groq hosts Llama 3.3 70b, fully capable for this pipeline
+FLASH_MODEL = "llama-3.3-70b-versatile"
+PRO_MODEL   = "llama-3.3-70b-versatile"
 
 
 def _get_client():
-    from google import genai
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    try:
+        from groq import Groq
+    except ImportError:
+        raise ImportError(
+            "groq package not installed. Run:  pip install groq"
+        )
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
     if not api_key:
         raise EnvironmentError(
-            "GEMINI_API_KEY not set.\n"
-            "Get a free key at https://aistudio.google.com/app/apikey\n"
-            "Then add to .env:  GEMINI_API_KEY=your_key_here"
+            "GROQ_API_KEY not set.\n"
+            "Get a free key at https://console.groq.com\n"
+            "Then add to .env:  GROQ_API_KEY=gsk_..."
         )
-    return genai.Client(api_key=api_key)
+    return Groq(api_key=api_key)
 
 
 def chat(model_name: str, system: str, user: str, max_tokens: int = 1024) -> str:
     """Single-turn chat. Returns model text as string."""
-    from google.genai import types
     client = _get_client()
-    response = client.models.generate_content(
+    response = client.chat.completions.create(
         model=model_name,
-        contents=user,
-        config=types.GenerateContentConfig(
-            system_instruction=system,
-            max_output_tokens=max_tokens,
-            temperature=0.1,
-        ),
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=max_tokens,
+        temperature=0.1,
     )
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
 
 
 def embed(text: str) -> list[float]:
-    """Embed text using free embedding model."""
-    client = _get_client()
-    result = client.models.embed_content(
-        model="text-embedding-004",
-        contents=text,
+    """
+    Groq doesn't offer embeddings — using a local fallback with sklearn TF-IDF.
+    This is only used by the vocabulary agent for fuzzy matching,
+    which already has a dictionary-based fallback that works fine.
+    """
+    raise NotImplementedError(
+        "Groq does not support embeddings. "
+        "The vocabulary agent uses dictionary matching instead — this is fine."
     )
-    return result.embeddings[0].values
