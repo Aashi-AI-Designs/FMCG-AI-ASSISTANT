@@ -78,10 +78,19 @@ class TestQueryAgentWithMock:
     @patch("agents.query_agent.chat")
     def test_write_sql_blocked_before_execution(self, mock_chat, mock_execute):
         from agents.query_agent import build_and_execute_query
+        # Use unknown intent so it falls through to LLM (templates handle known intents)
         mock_chat.return_value = '{"sql": "DELETE FROM promo_performance_mart WHERE campaign_id=\'X\'", "reasoning": "test"}'
-        result = build_and_execute_query({"intent": "promotional_performance", "campaign_id": "X", "region": None, "original_query": "test"})
+        result = build_and_execute_query({"intent": "unknown_intent", "campaign_id": "X", "region": None, "original_query": "test"})
         assert result["validation_status"] == "blocked"
         mock_execute.assert_not_called()
+
+    def test_hardcoded_templates_are_always_safe(self):
+        from agents.query_agent import _build_sql_from_template, _validate_sql_structure
+        for intent in ["promotional_performance", "regional_comparison",
+                       "inventory_movement", "campaign_impact_by_product"]:
+            sql = _build_sql_from_template(intent, {"campaign_id": "FEB_2025", "region": None, "category": None})
+            valid, msg = _validate_sql_structure(sql)
+            assert valid, f"Template for {intent} failed validation: {msg}"
 
 
 if __name__ == "__main__":
