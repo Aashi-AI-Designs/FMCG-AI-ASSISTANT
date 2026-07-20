@@ -1,6 +1,7 @@
 # Core
 google-generativeai>=0.7.0
 python-dotenv>=1.0.0
+grok
 
 # Data
 pandas>=2.2.0
