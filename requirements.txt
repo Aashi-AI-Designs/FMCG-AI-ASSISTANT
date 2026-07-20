@@ -23,6 +23,7 @@ sendgrid>=6.11.0
 # Testing
 pytest>=8.2.0
 deepeval>=1.0.0
+plotly
 
 # Embedding / RAG (Enrichment Agent)
 numpy>=1.26.0
